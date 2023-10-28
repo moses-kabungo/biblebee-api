@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "biblebee-api"
+version = "0.1.0"
+description = ""
+authors = ["Moses Kabungo <mose.kabungo@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104.0"
+poetry = {extras = ["dotenv"], version = "^1.6.1"}
+sqlalchemy = {extras = ["aiosqlite"], version = "^2.0.22"}
+gunicorn = "^21.2.0"
+uvicorn = "^0.23.2"
+
+
+[tool.poetry.group.dev.dependencies]
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
