@@ -18,7 +18,21 @@ class DataResponse(
     data: RT
 
 
-class BibleVersionOut(BaseModel):
+class DailyVerseOut(BaseModel):  #  pylint: disable=too-few-public-methods
+    """
+    Model schema for the data exchange of daily bible vers
+    with the clients.
+    """
+
+    id: int
+    tags: str
+    book_number: int
+    chapter: int
+    verse_start: int
+    verse_end: int
+
+
+class BibleVersionOut(BaseModel):  #  pylint: disable=too-few-public-methods
     """
     Model schema for data exchange of the bible version
     with the clients of the API.

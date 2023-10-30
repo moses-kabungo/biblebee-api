@@ -112,3 +112,27 @@ class Verse:  # pylint: disable=too-few-public-methods
             f"\ttext={self.text}\n"
             ")"
         )
+
+
+@mapper_registry.mapped
+class DailyVerse:  # pylint: disable=too-few-public-methods
+    """Store daily verses from the bible"""
+
+    __tablename__ = "daily_verses"
+
+    id = mapped_column(Integer, primary_key=True)
+    tags: Mapped[str]
+    book_number = mapped_column(String, ForeignKey("books.book_number"))
+    chapter: Mapped[int]
+    verse_start: Mapped[int]
+    verse_end: Mapped[int | None]
+
+    def __repr__(self) -> str:
+        return "DailyVerse(id={!r},tags={!r},book_number={!r},chapter={!r},verse_start={!r},verse_end={!r})".format(
+            self.id,
+            self.tags,
+            self.book_number,
+            self.chapter,
+            self.verse_start,
+            self.verse_end,
+        )

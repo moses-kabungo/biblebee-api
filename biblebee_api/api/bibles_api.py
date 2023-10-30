@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/")
 async def get_books(
     versions: list[str] = Query([]),
-    repo: BiblesRepo = Depends(BiblesRepo.new_instance),
+    repo: BiblesRepo = Depends(BiblesRepo.request_scoped),
 ) -> DataResponse[List[BookOut]]:
     """List down a list of all the bible books from the given version"""
     books = await repo.find_all(versions=versions)
@@ -23,7 +23,7 @@ async def get_books(
 async def get_book_chapters(
     book_number: int,
     revirsions: List[str] = Query(["SUV"]),
-    repo: BiblesRepo = Depends(BiblesRepo.new_instance),
+    repo: BiblesRepo = Depends(BiblesRepo.request_scoped),
 ) -> DataResponse[List[VerseOut]]:
     """
     Get a list of chapters in a book of the bible identified by `book_number`.
@@ -41,7 +41,7 @@ async def get_chapter_verses(
     book_number: int,
     chapter: int,
     revisions: List[str] = Query(["SUV"]),
-    repo: BiblesRepo = Depends(BiblesRepo.new_instance),
+    repo: BiblesRepo = Depends(BiblesRepo.request_scoped),
 ) -> DataResponse[List[VerseOut]]:
     """Get verses for the chapter in one of the bible books."""
     verses = await repo.find_chapter_verses(
@@ -59,7 +59,7 @@ async def get_verse(
     chapter: int,
     verse: int,
     revisions: List[str] = Query(["SUV"]),
-    repo: BiblesRepo = Depends(BiblesRepo.new_instance),
+    repo: BiblesRepo = Depends(BiblesRepo.request_scoped),
 ) -> DataResponse[VerseOut]:
     """
     Gets a single verse from the book of the bible.

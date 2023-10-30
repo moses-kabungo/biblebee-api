@@ -125,7 +125,10 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
 
         async with self.async_session() as session:
             result = await session.execute(query)
-            return [{row.version_code: row.books_count} for row in result]
+            return [
+                {"revision": row.version_code, "books_count": row.books_count}
+                for row in result
+            ]
 
     async def get_verse_counts_by_revisions(self, revisions: List[str]):
         """Get a count of verses in the revisions"""
@@ -144,10 +147,12 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
 
         async with self.async_session() as session:
             result = await session.execute(query)
-            return [{k: v} for k, v in result]
+            return [
+                {"revision": key, "verses_count": val} for key, val in result
+            ]
 
     @staticmethod
-    def new_instance(
+    def request_scoped(
         request: Request,
     ) -> "BiblesRepo":
         """Creates and return a data repository for managing bible books."""

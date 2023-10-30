@@ -1,15 +1,29 @@
 """Application module"""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 
-from biblebee_api.database import async_session_manager, init_tables
+from biblebee_api.api import adm_api
 from biblebee_api.api import bibles_api
-from biblebee_api.api import bibles_stats
+from biblebee_api.api import bibles_stats_api
+from biblebee_api.api import daily_verses_api
+from biblebee_api.database import async_session_manager, init_tables
+
+
+# Lifespan is used to handle heavy resource initialization
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Initialize resources to be utilized by the api"""
+    # initialize ORM Mapping
+    await init_tables()
+    # Initialize firebase cloud messaging
+    yield
+    # teardown resources.
 
 
 def create_app():
     """Create and return an application to be deployed"""
-    app = FastAPI(title="BiblebeeApi")
+    app = FastAPI(title="BiblebeeApi", lifespan=lifespan)
 
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next):
@@ -22,11 +36,12 @@ def create_app():
                 pass
             return response
 
-    @app.on_event("startup")
-    async def _init_tables():
-        await init_tables()
-
     # Register APIs
+
+    app.include_router(
+        router=adm_api.router, prefix="/api/v1/admin", tags=["Admin"]
+    )
+
     app.include_router(
         router=bibles_api.router,
         prefix="/api/v1/books",
@@ -34,7 +49,15 @@ def create_app():
     )
 
     app.include_router(
-        router=bibles_stats.router, prefix="/api/v1/stats", tags=["Statistics"]
+        router=bibles_stats_api.router,
+        prefix="/api/v1/stats",
+        tags=["Statistics"],
+    )
+
+    app.include_router(
+        router=daily_verses_api.router,
+        prefix="/api/v1/messages",
+        tags=["Daily Bible Verse"],
     )
 
     return app
