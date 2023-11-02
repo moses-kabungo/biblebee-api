@@ -17,7 +17,7 @@ def init():
     # Containerized environment
     firebase_config = os.environ.get("FIREBASE_CONFIG_FILE", None)
     if firebase_config is None:
-        firebase_config.os.environ.get("FIREBASE_CONFIG", None)
+        firebase_config = os.environ.get("FIREBASE_CONFIG", None)
         if not firebase_config is None:
             firebase_config = json.loads(base64.b64decode(firebase_config))
 
