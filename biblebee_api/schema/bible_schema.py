@@ -2,7 +2,7 @@
 
 In this module we define data exchange format between clients to the API.
 """
-
+from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
 from pydantic import BaseModel
 
@@ -16,6 +16,25 @@ class DataResponse(
     """Wrapper around responses with data type"""
 
     data: RT
+
+
+class DeviceIn(BaseModel):
+    """Data transfer object that allows clients to create devices"""
+
+    user_id: int
+    token: str
+    device_infos: str
+
+
+class DeviceOut(BaseModel):
+    """Data transfer object that allows clients to receive device info."""
+
+    id: int
+    user_id: int
+    token: str
+    device_infos: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class DailyVerseOut(BaseModel):  #  pylint: disable=too-few-public-methods
@@ -78,6 +97,7 @@ class BookOut(BaseModel):
 class VerseOut(BaseModel):
     """Model schema for a verse in the bible"""
 
+    book_version_code: str
     book_number: int
     chapter: int
     verse: int

@@ -1,12 +1,14 @@
 """The module define books for the bible related information such as books and verses."""
 
+from datetime import datetime
 from typing import List
 
-from sqlalchemy import Integer, ForeignKey, String
+from sqlalchemy import DateTime, Integer, ForeignKey, String
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import registry
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 mapper_registry = registry()
 
@@ -34,7 +36,7 @@ class BibleVersion:  # pylint: disable=too-few-public-methods
 
     # relationships
     books: Mapped[List["Book"]] = relationship(
-        back_populates="version", cascade="all, delete-orphan"
+        back_populates="revision", cascade="all, delete-orphan"
     )
 
 
@@ -53,18 +55,7 @@ class Book:  # pylint: disable=too-few-public-methods
     long_name: Mapped[str]
     book_color: Mapped[str]
 
-    version: Mapped["BibleVersion"] = relationship(back_populates="books")
-
-    # Composite infos
-    # book_info: Mapped[BookInfo] = composite(
-    #     mapped_column("description"),
-    #     mapped_column("chapter_string"),
-    #     mapped_column("language"),
-    #     mapped_column("russian_numbering"),
-    #     mapped_column("strong_numbers"),
-    #     mapped_column("right_to_left"),
-    #     mapped_column("chapter_string_ps"),
-    # )
+    revision: Mapped["BibleVersion"] = relationship(back_populates="books")
 
     # Relationships
     verses: Mapped[List["Verse"]] = relationship(
@@ -94,14 +85,17 @@ class Verse:  # pylint: disable=too-few-public-methods
 
     # Composite primary key on book and verse
     verse = mapped_column(Integer, primary_key=True)
-    book_number = mapped_column(
-        Integer, ForeignKey("books.book_number"), primary_key=True
+    book_version_code = mapped_column(
+        String, ForeignKey("books.version_code"), primary_key=True
     )
+    book_number = mapped_column(Integer, primary_key=True)
     chapter: Mapped[int]
     text: Mapped[str]
 
     # Relationships (This one is important in case of Search operation)
-    book: Mapped["Book"] = relationship(back_populates="verses")
+    book: Mapped["Book"] = relationship(
+        back_populates="verses", foreign_keys=[book_version_code, book_number]
+    )
 
     def __repr__(self) -> str:
         return (
@@ -136,3 +130,26 @@ class DailyVerse:  # pylint: disable=too-few-public-methods
             self.verse_start,
             self.verse_end,
         )
+
+
+@mapper_registry.mapped
+class Device:
+    """Device entities model"""
+
+    __tablename__ = "devices"
+
+    id = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int]
+    token: Mapped[str] = mapped_column(String, unique=True)
+    device_infos: Mapped[str]
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),  # pylint: disable=not-callable
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),  # pylint: disable=not-callable
+        server_onupdate=func.now(),  # pylint: disable=not-callable
+    )

@@ -12,7 +12,9 @@ from sqlalchemy.sql import func
 from celery import Celery
 from biblebee_api.database import async_session_manager
 from biblebee_api.model.bible_model import DailyVerse, Verse
+from biblebee_api.repo.devices_repo import DevicesRepo
 from biblebee_api.schema.bible_schema import DailyVerseOut
+from biblebee_api.service import cloud_messaging
 
 
 # Configure logging
@@ -49,6 +51,28 @@ async def generate_daily_verse_async(tag: str | None) -> str:
     )
     save_verse_to_file(result)
     return json.dumps(result)
+
+
+async def send_daily_verse_async(daily_verse: str):
+    """Send daily bible verse to the registered devices."""
+    async with async_session_manager() as manager:
+        # Get devices repository
+        devices_repo = DevicesRepo(async_session=manager)
+        # Get tokens
+        tokens = await devices_repo.all_tokens()
+        data = json.loads(daily_verse)
+        cloud_messaging.send(
+            data["verse_content"],
+            title="Daily bible message",
+            body="",
+            tokens=tokens,
+        )
+
+
+@celery.task(name="send_clound_message")
+def send_daily_verse(daily_verse: str):
+    """Send daily bible verse to the registered devices"""
+    return asyncio.run(send_daily_verse_async(daily_verse))
 
 
 @celery.task(name="daily_verse")

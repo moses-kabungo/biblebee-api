@@ -64,50 +64,51 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
             return result.scalars().all()
 
     async def find_chapter_verses(
-        self, book_number: int, chapter: int, revisions: List[str]
+        self,
+        book_number: int,
+        chapter: int,
+        verses: List[int],
+        revisions: List[str],
     ) -> List[Book]:
         """
         Find verses in the book and chapter corresponding to
         `book_number` and `chapter` respectively.
         """
         async with self.async_session() as session:
-            query = (
-                select(Verse)
-                .join(Book)
-                .filter(
-                    Book.book_number == book_number, Verse.chapter == chapter
-                )
+            query = select(Verse).filter(
+                Verse.book_number == book_number, Verse.chapter == chapter
             )
 
+            if len(verses):
+                query = query.filter(Verse.verse.in_(verses))
+
             if len(revisions):
-                query = query.filter(Book.version_code.in_(revisions))
+                query = query.filter(Verse.book_version_code.in_(revisions))
+
+            query = query.order_by(Verse.book_version_code.asc())
 
             result = await session.execute(query)
             return result.scalars().all()
 
     async def find_verse(
         self, book_number: int, chapter: int, verse: int, revisions: List[str]
-    ):
+    ) -> List[Verse]:
         """
         Retrieves a verse in the book and chapter corresponding to
         `boo_number`, `chapter` and `verse` respectively.
         """
         async with self.async_session() as session:
-            query = (
-                select(Verse)
-                .join(Book)
-                .filter(
-                    Book.book_number == book_number,
-                    Verse.chapter == chapter,
-                    Verse.verse == verse,
-                )
+            query = select(Verse).filter(
+                Verse.book_number == book_number,
+                Verse.chapter == chapter,
+                Verse.verse == verse,
             )
 
             if len(revisions):
-                query = query.filter(Book.version_code.in_(revisions))
+                query = query.filter(Verse.book_version_code.in_(revisions))
 
             result = await session.execute(query)
-            return result.scalar_one_or_none()
+            return result.scalars().all()
 
     async def get_books_count_by_revisions(self, revisions: List[str]):
         """Returns the number of books in revirsions"""

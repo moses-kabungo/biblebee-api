@@ -1,41 +1,48 @@
 version: '3.8'
 
 services:
-  # api:
-  #   image: biblebee/api:v1.0.0
-  #   ports:
-  #     - 8000:8000
-  #   command: gunicorn -w 1 -k uvicorn.workers.UvicornWorker biblebee_api:app -b 0.0.0.0:8000
-  #   environment:
-  #     - CELERY_BROKER_URL=redis://redis:6379/0
-  #     - CELERY_RESULT_BACKEND=redis://redis:6379/0
-  #   volumes:
-  #     - ./resource/:/app/resource
-  #   depends_on:
-  #     - redis
+  api:
+    image: biblebee/api:v1.0.1
+    ports:
+      - 8000:8000
+    command: gunicorn -w 1 -k uvicorn.workers.UvicornWorker biblebee_api:app -b 0.0.0.0:8000
+    environment:
+      - CELERY_BROKER_URL=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
+      - CELERY_RESULT_BACKEND=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
+      - FIREBASE_CONFIG_FILE=/run/secrets/firebase_config
+    volumes:
+      - ./resource:/app/resource
+      - ./config:/app/config
+    # depends_on:
+    #   - redis
+    secrets:
+      - firebase_config
 
   worker:
-    image: biblebee/api:v1.0.0
+    image: biblebee/api:v1.0.1
     command: celery -A biblebee_api.worker.celery worker --loglevel=info
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
+      - CELERY_RESULT_BACKEND=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
     volumes:
       - ./resource/:/app/resource
     depends_on:
-      # - api
-      - redis
+      - api
+      # - redis
 
-  # scheduler:
-  #   image: biblebee/api:v1.0.0
-  #   command: celery -A biblebee_api.scheduler beat
-  #   environment:
-  #     - CELERY_BROKER_URL=redis://redis:6379/0
-  #     - CELERY_RESULT_BACKEND=redis://redis:6379/0
-  #   depends_on:
-  #     - worker
+  scheduler:
+    image: biblebee/api:v1.0.1
+    command: celery -A biblebee_api.scheduler beat
+    environment:
+      - CELERY_BROKER_URL=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
+      - CELERY_RESULT_BACKEND=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
+    depends_on:
+      - worker
 
-  redis:
-    image: redis:7
-    ports:
-      - 6379:6379
+  # redis:
+  #   image: redis:7
+  #   ports:
+  #     - 6379:6379
+secrets:
+  firebase_config:
+    file: config/firebase.json
