@@ -19,8 +19,9 @@ def init():
     if firebase_config is None:
         firebase_config = os.environ.get("FIREBASE_CONFIG", None)
         if not firebase_config is None:
-            firebase_config = json.loads(base64.b64decode(firebase_config))
+            firebase_config = json.loads(firebase_config)
 
+    logger.debug(firebase_config)
     creds = credentials.Certificate(cert=firebase_config)
     initialize_app(credential=creds)
 
