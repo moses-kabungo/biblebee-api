@@ -10,11 +10,9 @@ services:
       - CELERY_BROKER_URL=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
       - CELERY_RESULT_BACKEND=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
       - FIREBASE_CONFIG_FILE=/run/secrets/firebase_config
+      - DB_PATH=/app/resource/Bibles.sqlite3
     volumes:
       - ./resource:/app/resource
-      - ./config:/app/config
-    # depends_on:
-    #   - redis
     secrets:
       - firebase_config
 
