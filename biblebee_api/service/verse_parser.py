@@ -4,7 +4,13 @@ import re
 
 
 def parse_bible_verse(verse_str) -> List[int]:
-    """Returns an array of numbers representing verses in the bible"""
+    """
+    Returns an array of numbers representing verses in the bible.
+    ```python
+    verses_idx = parse_bible_verse("1-3,5,8")
+    #> [1,2,3,5,8]
+    ```
+    """
     # Define a regular expression pattern to match verse ranges
     verse_pattern = r"(\d+)(?:-(\d+))?"
 

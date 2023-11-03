@@ -7,40 +7,48 @@ services:
       - 8000:8000
     command: gunicorn -w 1 -k uvicorn.workers.UvicornWorker biblebee_api:app -b 0.0.0.0:8000
     environment:
-      - CELERY_BROKER_URL=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
-      - CELERY_RESULT_BACKEND=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
       - FIREBASE_CONFIG_FILE=/run/secrets/firebase_config
       - DB_PATH=/app/resource/Bibles.sqlite3
+      - CELERY_BROKER_URL=celery_broker_url
+      - CELERY_RESULT_BACKEND=celery_result_backend
     volumes:
       - ./resource:/app/resource
     secrets:
       - firebase_config
-
+      - celery_broker_url
+      - celery_result_backend
   worker:
     image: biblebee/api:v1.0.1
     command: celery -A biblebee_api.worker.celery worker --loglevel=info
-    environment:
-      - CELERY_BROKER_URL=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
-      - CELERY_RESULT_BACKEND=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
     volumes:
       - ./resource/:/app/resource
+    environment:
+      - CELERY_BROKER_URL=celery_broker_url
+      - CELERY_RESULT_BACKEND=celery_result_backend
     depends_on:
       - api
-      # - redis
+    secrets:
+      - celery_broker_url
+      - celery_result_backend
 
   scheduler:
     image: biblebee/api:v1.0.1
     command: celery -A biblebee_api.scheduler beat
     environment:
-      - CELERY_BROKER_URL=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
-      - CELERY_RESULT_BACKEND=redis://default:rlxZbauuQdLS4yoR6n8AF0F0cJSZl4Oj@redis-18591.c44.us-east-1-2.ec2.cloud.redislabs.com:18591
+      - CELERY_BROKER_URL=celery_broker_url
+      - CELERY_RESULT_BACKEND=celery_result_backend
     depends_on:
       - worker
+    secrets:
+      - celery_broker_url
+      - celery_result_backend
 
-  # redis:
-  #   image: redis:7
-  #   ports:
-  #     - 6379:6379
 secrets:
   firebase_config:
     file: config/firebase.json
+  celery_broker_url:
+    external: true
+    name: '${CELERY_BROKER_URL}'
+  celery_result_backend:
+    external: true
+    name: '${CELERY_RESULT_BACKEND}'

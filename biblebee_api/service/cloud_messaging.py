@@ -1,6 +1,5 @@
 """Handle delivery of notifications to FCM"""
 
-import base64
 import json
 import logging
 import os
@@ -39,7 +38,9 @@ def send(
     try:
         br = messaging.send_multicast(message)
 
-        logger.debug("Sent message to {} device(s)" % br.success_count)
+        logger.debug(
+            f"Sent message to {br.success_count} device(s)"  # pylint: disable=logging-fstring-interpolation
+        )
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.exception(
             "An error occured while sending message using firebase. {}" % exc
