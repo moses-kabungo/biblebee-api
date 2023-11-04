@@ -38,10 +38,8 @@ def send(
     try:
         br = messaging.send_multicast(message)
 
-        logger.debug(
-            f"Sent message to {br.success_count} device(s)"  # pylint: disable=logging-fstring-interpolation
-        )
+        logger.debug("Sent message to %s device(s)", br.success_count)
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.exception(
-            "An error occured while sending message using firebase. {}" % exc
+        logger.error(
+            "An error occured while sending message using firebase. %s", exc
         )
