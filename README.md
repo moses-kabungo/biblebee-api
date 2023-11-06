@@ -19,3 +19,5 @@ By default, the API is deployable through docker (IaaS) or Heroku (PaaS). But yo
 |FIREBASE_CONFIG_FILE|Path to the firebase config file|
 
 ### Docker
+
+The compose file in the root of this project list down all the necessary components
