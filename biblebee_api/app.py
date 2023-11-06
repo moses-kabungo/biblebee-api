@@ -18,7 +18,6 @@ async def lifespan(_: FastAPI):
     try:
         await init_tables()
         cloud_messaging.init()
-
         yield
     finally:
         # teardown resources.

@@ -14,10 +14,10 @@ parser = verse_parser.GrammaticLexicalParser()
 
 
 async def parse_verse_notation(
-    verse_str: str | None = None,
+    query_expression: str | None = None,
 ) -> Dict[int, List[int]]:
     """Parse query string params and produce a dictionary of verses"""
-    parser.parse(verse_str)
+    parser.parse(query_expression)
     return parser.get_result()
 
 
@@ -34,7 +34,7 @@ async def get_books(
 @router.get("/{book_number}/skim")
 async def skim_book_content(
     book_number: int,
-    select: Annotated[
+    parts: Annotated[
         Dict[int, List[int]],
         Depends(parse_verse_notation),
     ],
@@ -48,13 +48,9 @@ async def skim_book_content(
     - `book_number` (int): The number of the Bible book to retrieve content from.
     - `select` (Dict[int, List[int]]): A dictionary specifying the chapters and verses to skim.
     - `revirsions` (List[str]): Optional parameter to specify Bible revisions (default is "SUV").
-    - `repo` (BiblesRepo): Dependency for accessing Bible data.
-
-    Returns:
-    - `DataResponse[List[VerseOut]]`: Response containing the skimed Bible verses in a structured format.
     """
     contents = await repo.skim_book_content(
-        book_number=book_number, parts=select, revirsions=revirsions
+        book_number=book_number, parts=parts, revirsions=revirsions
     )
     return JSONResponse(
         {
