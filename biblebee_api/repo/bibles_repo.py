@@ -1,12 +1,12 @@
 """Repository for the bible books (resources)"""
 
 import logging
-from typing import List
+from typing import Dict, List
 
 
 from fastapi import Request
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.sql.expression import func
 
 from biblebee_api.model.bible_model import Book, Verse
@@ -46,19 +46,29 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
 
             return result.scalars().all()
 
-    async def find_book_chapters(
-        self, book_number: int, revirsions: List[str]
+    async def skim_book_content(
+        self,
+        book_number: int,
+        parts: Dict[int, List[int]],
+        revirsions: List[str],
     ) -> List[Verse]:
         """Find a list of chapters in the book"""
         async with self.async_session() as session:
-            query = (
-                select(Verse)
-                .join(Book)
-                .filter(Book.book_number == book_number)
-            )
+            query = select(Verse).filter(Verse.book_number == book_number)
 
             if len(revirsions):
-                query = query.filter(Book.version_code.in_(revirsions))
+                query = query.filter(Verse.book_version_code.in_(revirsions))
+
+            or_conditions = []
+
+            for chapter, verses in parts.items():
+                logger.debug("chapter: %d, verses: %s", chapter, verses)
+                or_conditions.append(
+                    and_(Verse.chapter == chapter, Verse.verse.in_(verses))
+                )
+
+            if len(or_conditions) != 0:
+                query = query.filter(or_(*or_conditions))
 
             result = await session.execute(query)
             return result.scalars().all()

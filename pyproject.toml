@@ -19,6 +19,7 @@ firebase-admin = "^6.2.0"
 
 [tool.poetry.group.dev.dependencies]
 uvicorn = {extras = ["standard"], version = "^0.23.2"}
+pytest = "^7.4.3"
 
 [build-system]
 requires = ["poetry-core"]

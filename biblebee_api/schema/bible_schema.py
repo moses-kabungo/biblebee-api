@@ -4,7 +4,7 @@ In this module we define data exchange format between clients to the API.
 """
 from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 RT = TypeVar("RT", bound=BaseModel)
@@ -69,10 +69,8 @@ class BibleVersionOut(BaseModel):  #  pylint: disable=too-few-public-methods
     # Optional books of the bible
     books: Optional[List["BookOut"]] = None
 
-    class Config:  #  pylint: disable=too-few-public-methods
-        """Configure BookOut model behavior"""
-
-        from_attributes = True
+    # model config
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookOut(BaseModel):
@@ -88,10 +86,8 @@ class BookOut(BaseModel):
     # This is optional
     # verses: List["VerseOut"] | None = None
 
-    class Config:  #  pylint: disable=too-few-public-methods
-        """Configure BookOut model behavior"""
-
-        from_attributes = True
+    # model config
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VerseOut(BaseModel):
@@ -103,7 +99,5 @@ class VerseOut(BaseModel):
     verse: int
     text: str
 
-    class Config:  #  pylint: disable=too-few-public-methods
-        """Configure VerseOut behavior"""
-
-        from_attributes = True
+    # model config
+    model_config = ConfigDict(from_attributes=True)

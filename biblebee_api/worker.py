@@ -100,7 +100,9 @@ async def get_random_daily_verse(tag: str) -> DailyVerse:
                 .order_by(func.random())  # pylint: disable=not-callable
                 .limit(1)
             )
-            return (await session.execute(query)).scalars().one()
+            result = await session.execute(query)
+            daily_verse = result.scalars().one()
+            return daily_verse
 
 
 async def get_verse_content(daily_verse: DailyVerse) -> str:

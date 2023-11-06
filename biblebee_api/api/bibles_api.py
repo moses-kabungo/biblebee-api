@@ -1,6 +1,6 @@
 """A module for managing bible books."""
 
-from typing import Annotated, List
+from typing import Annotated, Dict, List
 from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -10,20 +10,15 @@ from biblebee_api.schema.bible_schema import BookOut, DataResponse, VerseOut
 from biblebee_api.service import verse_parser
 
 router = APIRouter()
+parser = verse_parser.GrammaticLexicalParser()
 
 
-async def read_stops(verses: str | None = None):
-    """
-    Read verse stops from the query string parameters
-    ```sh
-    curl -X GET http://<base_url>/api/v1/books/10/chapters/49?verses=10-11,13-15
-    #> Genesis 49:10-11,13-15
-    ```
-    """
-    if verses is None:
-        return []
-
-    return verse_parser.parse_bible_verse(verse_str=verses)
+async def parse_verse_notation(
+    verse_str: str | None = None,
+) -> Dict[int, List[int]]:
+    """Parse query string params and produce a dictionary of verses"""
+    parser.parse(verse_str)
+    return parser.get_result()
 
 
 @router.get("/")
@@ -36,44 +31,36 @@ async def get_books(
     return {"data": [BookOut.model_validate(book) for book in books]}
 
 
-@router.get("/{book_number}/chapters")
-async def get_book_chapters(
+@router.get("/{book_number}/skim")
+async def skim_book_content(
     book_number: int,
+    select: Annotated[
+        Dict[int, List[int]],
+        Depends(parse_verse_notation),
+    ],
     revirsions: List[str] = Query(["SUV"]),
     repo: BiblesRepo = Depends(BiblesRepo.request_scoped),
 ) -> DataResponse[List[VerseOut]]:
     """
-    Get a list of chapters in a book of the bible identified by `book_number`.
-    You can also run a parallel comparisions by specifying `revirsions` you need
-    in the query string.
+    Retrieve specific Bible content by skimming through chapters and verses.
+
+    Parameters:
+    - `book_number` (int): The number of the Bible book to retrieve content from.
+    - `select` (Dict[int, List[int]]): A dictionary specifying the chapters and verses to skim.
+    - `revirsions` (List[str]): Optional parameter to specify Bible revisions (default is "SUV").
+    - `repo` (BiblesRepo): Dependency for accessing Bible data.
+
+    Returns:
+    - `DataResponse[List[VerseOut]]`: Response containing the skimed Bible verses in a structured format.
     """
-    chapters = await repo.find_book_chapters(
-        book_number=book_number, revirsions=revirsions
+    contents = await repo.skim_book_content(
+        book_number=book_number, parts=select, revirsions=revirsions
     )
-    return {"data": chapters}
-
-
-@router.get("/{book_number}/chapters/{chapter}/verses")
-async def get_chapter_verses(
-    book_number: int,
-    chapter: int,
-    verses: Annotated[List[int], Depends(read_stops)],
-    revisions: List[str] = Query(["SUV"]),
-    repo: BiblesRepo = Depends(BiblesRepo.request_scoped),
-) -> DataResponse[List[VerseOut]]:
-    """Get verses for the chapter in one of the bible books."""
-    verses = await repo.find_chapter_verses(
-        book_number=book_number,
-        chapter=chapter,
-        verses=verses,
-        revisions=revisions,
-    )
-
     return JSONResponse(
         {
             "data": [
-                VerseOut.model_validate(verse).model_dump()
-                for verse in jsonable_encoder(verses)
+                VerseOut.model_validate(part).model_dump()
+                for part in jsonable_encoder(contents)
             ]
         }
     )

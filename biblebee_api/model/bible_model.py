@@ -117,19 +117,10 @@ class DailyVerse:  # pylint: disable=too-few-public-methods
     id = mapped_column(Integer, primary_key=True)
     tags: Mapped[str]
     book_number = mapped_column(String, ForeignKey("books.book_number"))
-    chapter: Mapped[int]
-    verse_start: Mapped[int]
-    verse_end: Mapped[int | None]
+    verses_ptr: Mapped[str]
 
     def __repr__(self) -> str:
-        return "DailyVerse(id={!r},tags={!r},book_number={!r},chapter={!r},verse_start={!r},verse_end={!r})".format(
-            self.id,
-            self.tags,
-            self.book_number,
-            self.chapter,
-            self.verse_start,
-            self.verse_end,
-        )
+        return rf"DailyVerse(id={self.id},tags={self.tags},book_number={self.book_number},verses_ptr={self.verses_ptr}"
 
 
 @mapper_registry.mapped
