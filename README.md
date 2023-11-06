@@ -1,6 +1,6 @@
 # BiblebeeApi
 
-An ethuthiastic API for the bible app clients. (Find it)[https://biblebee-api-035c43b7cf89.herokuapp.com/docs]
+An ethuthiastic API for the bible app clients. [https://biblebee-api-035c43b7cf89.herokuapp.com/docs](Find it)
 
 ## Deployment
 
