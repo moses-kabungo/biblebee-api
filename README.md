@@ -2,6 +2,13 @@
 
 An ethuthiastic API for the bible app clients. [Find it here](https://biblebee-api-035c43b7cf89.herokuapp.com/docs)
 
+## Features
+ - List of Bible books
+ - Skimming content
+ - Search (WIP)
+ - Content categorization (WIP)
+ - Daily verse
+
 ## Deployment
 
 ### Requirements
