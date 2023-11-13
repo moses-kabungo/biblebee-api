@@ -31,6 +31,24 @@ async def get_books(
     return {"data": [BookOut.model_validate(book) for book in books]}
 
 
+@router.get("/{book_number}/info")
+async def get_book_info(
+    book_number: int,
+    revisions: List[str] = Query(["SUV"]),
+    repo: BiblesRepo = Depends(BiblesRepo.request_scoped),
+) -> DataResponse[List[BookOut]]:
+    """Get information about the book of the bible at `book_number` in each `revisions`"""
+    books = await repo.find_book_info(book_number=book_number, revisions=revisions)
+    return JSONResponse(
+        {
+            "data": [
+                BookOut.model_validate(book).model_dump()
+                for book in jsonable_encoder(books)
+            ]
+        }
+    )
+
+
 @router.get("/{book_number}/skim")
 async def skim_book_content(
     book_number: int,

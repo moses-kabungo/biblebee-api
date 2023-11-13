@@ -7,7 +7,8 @@ An ethuthiastic API for the bible app clients. [Find it here](https://biblebee-a
  - Skimming content
  - Search (WIP)
  - Content categorization (WIP)
- - Daily verse
+ - Content ranking (WIP)
+ - Daily bible verse through FCM
 
 ## Deployment
 

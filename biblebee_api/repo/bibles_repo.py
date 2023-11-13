@@ -26,9 +26,7 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
     in a dedicated service.
     """
 
-    def __init__(
-        self, async_session: async_sessionmaker[AsyncSession]
-    ) -> None:
+    def __init__(self, async_session: async_sessionmaker[AsyncSession]) -> None:
         """Initialize books repository"""
         self.async_session = async_session
 
@@ -44,6 +42,17 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
 
             result = await session.execute(query)
 
+            return result.scalars().all()
+
+    async def find_book_info(self, book_number: int, revisions: List[str]):
+        """Get information related to the book in the bible given by `book_number`"""
+        query = select(Book).filter_by(book_number=book_number)
+
+        if len(revisions):
+            query = query.filter(Book.version_code.in_(revisions))
+
+        async with self.async_session() as session:
+            result = await session.execute(query)
             return result.scalars().all()
 
     async def skim_book_content(
@@ -126,9 +135,7 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
         query = (
             select(
                 Book.version_code,
-                func.count().label(  # pylint: disable=not-callable
-                    "books_count"
-                ),
+                func.count().label("books_count"),  # pylint: disable=not-callable
             )
             .filter(Book.version_code.in_(revisions))
             .group_by(Book.version_code)
@@ -146,9 +153,7 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
         query = (
             select(
                 Book.version_code,
-                func.count().label(  # pylint: disable=not-callable
-                    "verses_count"
-                ),
+                func.count().label("verses_count"),  # pylint: disable=not-callable
             )
             .select_from(Verse)
             .join(Book)
@@ -158,9 +163,7 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
 
         async with self.async_session() as session:
             result = await session.execute(query)
-            return [
-                {"revision": key, "verses_count": val} for key, val in result
-            ]
+            return [{"revision": key, "verses_count": val} for key, val in result]
 
     @staticmethod
     def request_scoped(

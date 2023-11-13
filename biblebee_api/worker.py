@@ -12,6 +12,7 @@ from sqlalchemy.sql import func
 from celery import Celery
 from biblebee_api.database import async_session_manager
 from biblebee_api.model.bible_model import DailyVerse, Verse
+from biblebee_api.repo.bibles_repo import BiblesRepo
 from biblebee_api.repo.devices_repo import DevicesRepo
 from biblebee_api.schema.bible_schema import DailyVerseOut
 from biblebee_api.service import cloud_messaging
@@ -67,6 +68,14 @@ async def send_daily_verse_async(daily_verse: str):
             body="",
             tokens=tokens,
         )
+
+
+async def mark_daily_verse_async(daily_verse: str):
+    """Update database to show the currently active verse"""
+    async with async_session_manager() as manager:
+        # Get data repository
+        repo = BiblesRepo(async_session=manager)
+        
 
 
 @celery.task(name="send_clound_message")

@@ -124,7 +124,7 @@ class DailyVerse:  # pylint: disable=too-few-public-methods
 
 
 @mapper_registry.mapped
-class Device:
+class Device:  # pylint: disable=too-few-public-methods
     """Device entities model"""
 
     __tablename__ = "devices"
