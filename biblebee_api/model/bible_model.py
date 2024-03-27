@@ -14,7 +14,7 @@ mapper_registry = registry()
 
 
 @mapper_registry.mapped
-class BibleVersion:  # pylint: disable=too-few-public-methods
+class BibleRevision:  # pylint: disable=too-few-public-methods
     """
     Models bible version.
 
@@ -26,6 +26,7 @@ class BibleVersion:  # pylint: disable=too-few-public-methods
     __tablename__ = "bible_versions"
 
     version_code = mapped_column(String, primary_key=True)
+    version_name: Mapped[str]
     language: Mapped[str]
     russian_numbering: Mapped[bool]
     strong_numbers: Mapped[bool]
@@ -47,15 +48,14 @@ class Book:  # pylint: disable=too-few-public-methods
     __tablename__ = "books"
 
     book_number = mapped_column(Integer, primary_key=True)
-    version_code = mapped_column(
-        String, ForeignKey("bible_versions.version_code")
-    )
+    version_code = mapped_column(String, ForeignKey("bible_versions.version_code"))
     version_language: Mapped[str]
     short_name: Mapped[str]
     long_name: Mapped[str]
     book_color: Mapped[str]
+    chapters: Mapped[int]
 
-    revision: Mapped["BibleVersion"] = relationship(back_populates="books")
+    revision: Mapped["BibleRevision"] = relationship(back_populates="books")
 
     # Relationships
     verses: Mapped[List["Verse"]] = relationship(
@@ -89,12 +89,16 @@ class Verse:  # pylint: disable=too-few-public-methods
         String, ForeignKey("books.version_code"), primary_key=True
     )
     book_number = mapped_column(Integer, primary_key=True)
-    chapter: Mapped[int]
+    chapter: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str]
 
     # Relationships (This one is important in case of Search operation)
     book: Mapped["Book"] = relationship(
-        back_populates="verses", foreign_keys=[book_version_code, book_number]
+        "Book",
+        foreign_keys=[book_number, book_version_code],
+        primaryjoin="and_(Verse.book_number==Book.book_number, "
+        "Verse.book_version_code==Book.version_code)",
+        back_populates="verses",
     )
 
     def __repr__(self) -> str:
@@ -144,3 +148,26 @@ class Device:  # pylint: disable=too-few-public-methods
         server_default=func.now(),  # pylint: disable=not-callable
         server_onupdate=func.now(),  # pylint: disable=not-callable
     )
+
+
+@mapper_registry.mapped
+class CrossRef:
+    """Cross reference for the bible study"""
+
+    __tablename__ = "cross_refs"
+
+    id = mapped_column(Integer, primary_key=True)
+    source_verse: Mapped[str]
+    target_verse: Mapped[str]
+    rank: Mapped[int]
+
+    # created_at: Mapped[datetime] = mapped_column(
+    #     DateTime(timezone=True),
+    #     server_default=func.now(),  # pylint: disable=not-callable
+    # )
+
+    # updated_at: Mapped[datetime] = mapped_column(
+    #     DateTime(timezone=True),
+    #     server_default=func.now(),  # pylint: disable=not-callable
+    #     server_onupdate=func.now(),  # pylint: disable=not-callable
+    # )

@@ -4,9 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 
 from biblebee_api.api import adm_api
+from biblebee_api.api import bible_revisions_api
 from biblebee_api.api import bibles_api
 from biblebee_api.api import bibles_stats_api
 from biblebee_api.api import daily_verses_api
+from biblebee_api.api import cross_refs_api
 from biblebee_api.database import async_session_manager, init_tables
 from biblebee_api.service import cloud_messaging
 
@@ -41,14 +43,24 @@ def create_app():
 
     # Register APIs
 
+    app.include_router(router=adm_api.router, prefix="/api/v1/admin", tags=["Admin"])
+
     app.include_router(
-        router=adm_api.router, prefix="/api/v1/admin", tags=["Admin"]
+        router=bible_revisions_api.router,
+        prefix="/api/v1/revisions",
+        tags=["Revisions"],
     )
 
     app.include_router(
         router=bibles_api.router,
         prefix="/api/v1/books",
         tags=["Contents"],
+    )
+
+    app.include_router(
+        router=cross_refs_api.router,
+        prefix="/api/v1/crossrefs",
+        tags=["Cross References"],
     )
 
     app.include_router(

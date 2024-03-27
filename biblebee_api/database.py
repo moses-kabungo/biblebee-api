@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import (
 from biblebee_api.model.bible_model import mapper_registry
 
 # Configure logger
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Define the database URL
@@ -32,11 +32,11 @@ async def init_tables():
 
 
 @asynccontextmanager
-async def async_session_manager() -> AsyncContextManager[
-    async_sessionmaker[AsyncSession]
-]:
+async def async_session_manager() -> (
+    AsyncContextManager[async_sessionmaker[AsyncSession]]
+):  # type: ignore
     """Async context manager for the database connection"""
-    session = async_sessionmaker(engine, expire_on_commit=True)
+    session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     try:
         yield session
     finally:

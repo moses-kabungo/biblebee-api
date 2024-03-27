@@ -6,10 +6,12 @@ from typing import Dict, List
 
 from fastapi import Request
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, delete, or_, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import func
 
-from biblebee_api.model.bible_model import Book, Verse
+from biblebee_api.model.bible_model import BibleRevision, Book, CrossRef, Verse
+from biblebee_api.service.verse_parser import GrammaticLexicalParser
 
 
 # Configure logger
@@ -26,9 +28,14 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
     in a dedicated service.
     """
 
-    def __init__(self, async_session: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self,
+        async_session: async_sessionmaker[AsyncSession],
+        parser: GrammaticLexicalParser,
+    ) -> None:
         """Initialize books repository"""
         self.async_session = async_session
+        self.parser = parser
 
     async def find_all(self, versions: List[str]) -> List[Book]:
         """
@@ -55,6 +62,17 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
             result = await session.execute(query)
             return result.scalars().all()
 
+    async def find_book_and_chapters(self, book_number: int, revisions: List[str]):
+        """Get all the chapters of the book"""
+        query = select(Verse).filter(Verse.book_number == book_number)
+
+        if len(revisions):
+            query = query.filter(Verse.book_version_code.in_(revisions))
+
+        async with self.async_session() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
     async def skim_book_content(
         self,
         book_number: int,
@@ -63,7 +81,11 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
     ) -> List[Verse]:
         """Find a list of chapters in the book"""
         async with self.async_session() as session:
-            query = select(Verse).filter(Verse.book_number == book_number)
+            query = (
+                select(Verse)
+                .options(selectinload(Verse.book))
+                .filter(Verse.book_number == book_number)
+            )
 
             if len(revirsions):
                 query = query.filter(Verse.book_version_code.in_(revirsions))
@@ -78,6 +100,8 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
 
             if len(or_conditions) != 0:
                 query = query.filter(or_(*or_conditions))
+
+            print(query.compile())
 
             result = await session.execute(query)
             return result.scalars().all()
@@ -94,8 +118,10 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
         `book_number` and `chapter` respectively.
         """
         async with self.async_session() as session:
-            query = select(Verse).filter(
-                Verse.book_number == book_number, Verse.chapter == chapter
+            query = (
+                select(Verse)
+                .options(selectinload(Verse.book))
+                .filter(Verse.book_number == book_number, Verse.chapter == chapter)
             )
 
             if len(verses):
@@ -128,6 +154,79 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
 
             result = await session.execute(query)
             return result.scalars().all()
+
+    async def create_cross_refs(self, cross_refs: List[CrossRef]):
+        """Multiple insertion of cross references to guide the bible reader."""
+        async with self.async_session() as session:
+            await session.execute(delete(CrossRef))
+            session.add_all(cross_refs)
+            await session.commit()
+
+        return {"message": "Cross references created successfully"}
+
+    async def all_revisions(self) -> List[BibleRevision]:
+        """Find bible revisions from the API"""
+        # TODO: Add language filter
+        async with self.async_session() as session:
+            query = select(BibleRevision)
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def find_cross_refs(self, book_id, chapter_id, verse_id, revisions):
+        """Get cross reference for the `book_id.chapter_id:verse_id` e.g., 1.1:1 (Genesis 1:1)"""
+        cross_refs_query = (
+            select(CrossRef)
+            .filter_by(source_verse=f"{book_id}.{chapter_id}:{verse_id}")
+            .order_by(CrossRef.rank.desc())
+        )
+
+        async with self.async_session() as session:
+            cross_refs_result = await session.execute(cross_refs_query)
+            cross_refs = cross_refs_result.scalars().all()
+
+            verse_conditions = []
+
+            for cross_ref in cross_refs:
+                target_verses = cross_ref.target_verse.split("-")
+                for verse_segment in target_verses:
+
+                    try:
+                        book_part, chapter_and_verses = verse_segment.split(".")
+                        self.parser.parse(chapter_and_verses)
+                        for parsed_chapter, verses in self.parser.get_result().items():
+                            logger.debug(
+                                "chapter: %d, verses: %s", parsed_chapter, verses
+                            )
+                            verse_conditions.append(
+                                (int(book_part), parsed_chapter, verses)
+                            )
+                    except ValueError:
+                        logger.error("Invalid verse segment: %s", verse_segment)
+                        continue  # Skip invalid verse segment.
+
+            # Perform a single, optimized query with collected conditions
+            if len(verse_conditions) != 0:
+                or_filter = or_(
+                    *[
+                        and_(
+                            Verse.book_number == book_part,
+                            Verse.chapter == chapter,
+                            Verse.verse.in_(verses),
+                        )
+                        for book_part, chapter, verses in verse_conditions
+                    ]
+                )
+
+                verses_query = select(Verse).where(or_filter)
+                if len(revisions):
+                    verses_query = verses_query.filter(
+                        Verse.book_version_code.in_(revisions)
+                    )
+
+                # Execute final optimized query
+                verses_result = await session.execute(verses_query)
+                return verses_result.scalars().all()
+            return []
 
     async def get_books_count_by_revisions(self, revisions: List[str]):
         """Returns the number of books in revirsions"""
@@ -170,4 +269,6 @@ class BiblesRepo:  # pylint: disable=too-few-public-methods
         request: Request,
     ) -> "BiblesRepo":
         """Creates and return a data repository for managing bible books."""
-        return BiblesRepo(async_session=request.state.async_session)
+        return BiblesRepo(
+            async_session=request.state.async_session, parser=GrammaticLexicalParser()
+        )

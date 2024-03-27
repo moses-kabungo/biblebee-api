@@ -2,6 +2,7 @@
 
 In this module we define data exchange format between clients to the API.
 """
+
 from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
 from pydantic import BaseModel, ConfigDict
@@ -10,12 +11,26 @@ from pydantic import BaseModel, ConfigDict
 RT = TypeVar("RT", bound=BaseModel)
 
 
-class DataResponse(
-    BaseModel, Generic[RT]
-):  #  pylint: disable=too-few-public-methods
+class DataResponse(BaseModel, Generic[RT]):  #  pylint: disable=too-few-public-methods
     """Wrapper around responses with data type"""
 
-    data: RT
+    data: RT | List[RT]
+
+
+class BibleRevisionOut(BaseModel):  # pylint: disable=too-few-public-methods
+    """
+    Data presentation schema of the revisions
+    """
+
+    version_code: str
+    version_name: str
+    language: str
+    russian_numbering: bool
+    strong_numbers: bool
+    right_to_left: bool
+    chapter_string_ps: str
+    year: int
+    source: str
 
 
 class DeviceIn(BaseModel):
@@ -82,6 +97,8 @@ class BookOut(BaseModel):
     short_name: str
     long_name: str
     book_color: str
+    chapters: int
+    verses: List["VerseOut"] = []
 
     # This is optional
     # verses: List["VerseOut"] | None = None
@@ -98,6 +115,31 @@ class VerseOut(BaseModel):
     chapter: int
     verse: int
     text: str
+    book: BookOut | None = None
 
     # model config
     model_config = ConfigDict(from_attributes=True)
+
+
+class CrossRefIn(BaseModel):
+    """Model schema for creating cross reference"""
+
+    source_verse: str
+    target_verse: str
+    rank: int
+
+
+class CrossRefOut(BaseModel):
+    """Model schema for a cross reference"""
+
+    id: int
+    source_verse: str
+    target_verse: str
+    rank: int
+
+    created_at: datetime
+    updated_at: datetime
+
+    # model config
+    model_config = ConfigDict(from_attributes=True)
+    # pylint: disable=too-few-public-methods
